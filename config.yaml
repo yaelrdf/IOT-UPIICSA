@@ -1,0 +1,95 @@
+# ============================================================
+#  IoT Network Security Monitor — Configuration
+# ============================================================
+#  VM Testing:   set interface to eth0, mode to passive
+#  Raspberry Pi: set interface to wlan0, mode to active
+#
+#  Quick setup checklist:
+#    1. ip route | grep default      → your gateway_ip
+#    2. ip a                         → your interface name
+#    3. ip route | grep -v default   → your subnet
+# ============================================================
+
+network:
+  interface: "eth0"               # Network interface to use
+  mode: "passive"                 # passive (sniff only) | active (ARP spoof MITM)
+  gateway_ip: "192.168.1.1"      # Your router/gateway IP   ← UPDATE THIS
+  subnet: "192.168.1.0/24"       # Your local subnet        ← UPDATE THIS
+
+scan:
+  discovery_interval_sec: 300    # How often to scan for devices (5 min)
+  capture_duration_sec: 60       # Seconds to capture per session
+  capture_interval_sec: 600      # How often to run a capture (10 min)
+  targets: "all"                 # "all"  or  ["192.168.1.10", "192.168.1.20"]
+
+email:
+  enabled: false                 # Set true + fill below to get email alerts
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 465
+  use_ssl: true
+  sender_email: "your.monitor@gmail.com"
+  sender_password: "your_app_password"   # Gmail App Password (not your real pwd)
+  recipient_email: "you@email.com"
+  alert_on_severity: ["high", "critical"]
+
+thresholds:
+  beaconing_min_connections: 8   # Minimum hits to flag beaconing
+  beaconing_max_cv: 0.20         # Coefficient of variation (lower = more regular)
+  beaconing_window_min: 30       # Time window for beaconing analysis (minutes)
+  volume_alert_kb_per_min: 2048  # Alert when device sends > 2 MB/min
+  geo_alert_countries:           # ISO 3166-1 alpha-2 country codes to alert on
+    - "KP"
+    - "IR"
+  geo_cache_hours: 24
+  new_device_alert: true
+
+web:
+  host: "0.0.0.0"
+  port: 5000
+  secret_key: "change_this_to_a_random_32char_string!!"
+  debug: false
+
+threat_intel:
+  auto_update: true                    # Auto-update blocklists on startup
+  update_interval_sec: 86400          # Update every 24 hours
+  geo_api_url: "http://ip-api.com/json/{ip}?fields=countryCode,country,isp,org"
+  sources:
+    - name: "feodo_tracker"
+      type: "ip"
+      url: "https://sslbl.abuse.ch/blacklist/feodo_server.txt"
+    - name: "urlhaus_malware_ips"
+      type: "ip"
+      url: "https://urlhaus-api.abuse.ch/downloads/csv_ip_blacklist/"
+    - name: "botnet_ips"
+      type: "ip"
+      url: "https://botcc.abuse.ch/feeds/plain_botnet_c2/"
+    - name: "emerging_threats"
+      type: "ip"
+      url: "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+    - name: "urlhaus_domains"
+      type: "domain"
+      url: "https://urlhaus-api.abuse.ch/downloads/csv_domain_blacklist/"
+
+database:
+  path: "data/monitor.db"
+
+logging:
+  level: "INFO"                  # DEBUG | INFO | WARNING | ERROR
+  file: "data/monitor.log"
+  max_bytes: 10485760            # 10 MB per log file
+  backup_count: 3
+
+threat_intel:
+  auto_update: true
+  update_interval_sec: 86400    # 24 hours
+  geo_api_url: "http://ip-api.com/json/{ip}?fields=countryCode,country,isp,org"
+  sources:
+    - name: "feodo_tracker"
+      url: "https://feodotracker.abuse.ch/downloads/ipblocklist.txt"
+      type: "ip"
+    - name: "urlhaus_hosts"
+      url: "https://urlhaus.abuse.ch/downloads/hostfile/"
+      type: "domain"
+    - name: "dan_tor_exit"
+      url: "https://www.dan.me.uk/torlist/?exit"
+      type: "ip"

@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - IoT Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">🏠 Network Security Dashboard</h2>
+    </div>
+</div>
+
+<!-- System Stats Cards -->
+<div class="row">
+    <div class="col-md-2 col-sm-6">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #3498db;">{{ stats.total_devices }}</div>
+            <div class="stat-label">Connected Devices</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #e74c3c;">{{ stats.blocked_devices }}</div>
+            <div class="stat-label">Blocked Devices</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #f39c12;">{{ stats.events_today }}</div>
+            <div class="stat-label">Events Today</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #e74c3c;">{{ stats.critical_today }}</div>
+            <div class="stat-label">Critical Events</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #16a085;">{{ stats.unacknowledged }}</div>
+            <div class="stat-label">Unacknowledged</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #8e44ad;">{{ stats.intel_ips }}</div>
+            <div class="stat-label">Known-Bad IPs</div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts Section -->
+{% if critical_count > 0 %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <strong>🚨 Critical Alerts!</strong> {{ critical_count }} critical event(s) detected.
+    <a href="/events?severity=critical" class="btn btn-sm btn-danger ms-2">View Details</a>
+</div>
+{% endif %}
+
+{% if high_count > 0 %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <strong>⚠️ High Severity Alerts!</strong> {{ high_count }} high-severity event(s) detected.
+    <a href="/events?severity=high" class="btn btn-sm btn-warning ms-2">View Details</a>
+</div>
+{% endif %}
+
+<!-- Recent Events Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📋 Recent Events</span>
+                <a href="/events" class="btn btn-sm btn-outline-light">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_events %}
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Time</th>
+                                <th>Device</th>
+                                <th>Event Type</th>
+                                <th>Severity</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in recent_events[:10] %}
+                            <tr>
+                                <td>
+                                    <span class="time-badge" title="{{ event.timestamp }}">
+                                        {{ event.timestamp | timeago }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ event.device_ip }}</strong>
+                                </td>
+                                <td>
+                                    {{ event.event_type.replace('_', ' ').title() }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ event.severity | severity_badge }}">
+                                        {{ event.severity.upper() }}
+                                    </span>
+                                </td>
+                                <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ event.description }}
+                                </td>
+                                <td>
+                                    {% if not event.acknowledged %}
+                                    <button class="btn btn-xs btn-sm btn-outline-success" 
+                                            onclick="acknowledgeEvent({{ event.id }})">
+                                        ✓ Ack
+                                    </button>
+                                    {% else %}
+                                    <span class="badge bg-success">Acknowledged</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    ✨ No events recorded yet. Your network is looking good!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Devices Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📱 Connected Devices</span>
+                <span class="badge bg-info">{{ devices | length }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if devices %}
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>IP Address</th>
+                                <th>MAC Address</th>
+                                <th>Vendor</th>
+                                <th>Hostname</th>
+                                <th>First Seen</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for device in devices[:10] %}
+                            <tr>
+                                <td>
+                                    <a href="/api/devices/{{ device.id }}" target="_blank">
+                                        <strong>{{ device.ip }}</strong>
+                                    </a>
+                                </td>
+                                <td>
+                                    <code>{{ device.mac or 'Unknown' }}</code>
+                                </td>
+                                <td>
+                                    {{ device.vendor or 'Unknown' }}
+                                </td>
+                                <td>
+                                    {{ device.hostname or '-' }}
+                                </td>
+                                <td>
+                                    <span class="time-badge" title="{{ device.first_seen }}">
+                                        {{ device.first_seen | timeago }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if device.is_blocked %}
+                                    <span class="status-badge status-blocked">🚫 Blocked</span>
+                                    {% else %}
+                                    <span class="status-badge status-active">✓ Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if device.is_blocked %}
+                                    <button class="btn btn-xs btn-sm btn-outline-success" 
+                                            onclick="unblockDevice({{ device.id }}, '{{ device.ip }}')">
+                                        Unblock
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-xs btn-sm btn-outline-danger" 
+                                            onclick="blockDevice({{ device.id }}, '{{ device.ip }}')">
+                                        Block
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    No devices discovered yet. The scanner will discover devices automatically.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function acknowledgeEvent(eventId) {
+    fetch(`/api/events/${eventId}/acknowledge`, { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) location.reload();
+        })
+        .catch(e => alert('Error: ' + e));
+}
+
+function blockDevice(deviceId, ip) {
+    if (confirm(`Block all traffic from ${ip}?`)) {
+        fetch(`/api/devices/${deviceId}/block`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                if (d.ok) location.reload();
+                else alert('Error: ' + d.error);
+            })
+            .catch(e => alert('Error: ' + e));
+    }
+}
+
+function unblockDevice(deviceId, ip) {
+    if (confirm(`Unblock ${ip}?`)) {
+        fetch(`/api/devices/${deviceId}/unblock`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => {
+                if (d.ok) location.reload();
+                else alert('Error: ' + d.error);
+            })
+            .catch(e => alert('Error: ' + e));
+    }
+}
+</script>
+{% endblock %}

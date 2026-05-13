@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IoT Monitor{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --danger: #e94560;
+            --warning: #f39c12;
+            --success: #27ae60;
+            --info: #3498db;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .navbar a {
+            color: #ecf0f1 !important;
+        }
+
+        .navbar a:hover {
+            color: var(--accent) !important;
+            text-decoration: underline;
+        }
+
+        .sidebar {
+            background: var(--primary);
+            color: #ecf0f1;
+            min-height: calc(100vh - 70px);
+            padding: 20px 0;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .sidebar a {
+            color: #bdc3c7;
+            padding: 12px 20px;
+            display: block;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .sidebar a:hover {
+            background: var(--accent);
+            color: white;
+            padding-left: 30px;
+        }
+
+        .sidebar a.active {
+            background: var(--accent);
+            color: white;
+            border-left: 4px solid var(--warning);
+            padding-left: 16px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .badge-critical { background-color: var(--danger); }
+        .badge-high { background-color: var(--warning); color: #333; }
+        .badge-medium { background-color: var(--info); }
+        .badge-low { background-color: #95a5a6; }
+
+        .badge-danger { background-color: var(--danger); }
+        .badge-warning { background-color: var(--warning); }
+        .badge-info { background-color: var(--info); }
+        .badge-secondary { background-color: #95a5a6; }
+
+        .table {
+            font-size: 0.95rem;
+        }
+
+        .table thead {
+            background: var(--accent);
+            color: white;
+        }
+
+        .table-striped > tbody > tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .alert {
+            border: none;
+            border-left: 4px solid;
+        }
+
+        .alert-danger {
+            border-left-color: var(--danger);
+            background-color: #fadbd8;
+            color: #a93226;
+        }
+
+        .alert-warning {
+            border-left-color: var(--warning);
+            background-color: #fef5e7;
+            color: #7d6608;
+        }
+
+        .alert-info {
+            border-left-color: var(--info);
+            background-color: #d6eaf8;
+            color: #1b4965;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-active { background: #d4edda; color: #155724; }
+        .status-blocked { background: #f8d7da; color: #721c24; }
+        .status-idle { background: #e2e3e5; color: #383d41; }
+
+        .main-content {
+            padding: 20px;
+            min-height: calc(100vh - 70px);
+        }
+
+        .breadcrumb {
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            margin-top: 40px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .time-badge {
+            background: #ecf0f1;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                padding: 10px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">🛡️ IoT Monitor</a>
+            <div class="d-flex align-items-center">
+                <span class="navbar-text me-3" id="current-time"></span>
+                <a class="btn btn-sm btn-outline-light" href="/">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container-fluid">
+        <div class="row" style="min-height: calc(100vh - 70px)">
+            <!-- Sidebar -->
+            <nav class="col-md-2 sidebar d-none d-md-block">
+                <div class="nav flex-column">
+                    <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+                        📊 Dashboard
+                    </a>
+                    <a href="/devices" class="nav-link {% if request.endpoint == 'devices_page' %}active{% endif %}">
+                        📱 Devices
+                    </a>
+                    <a href="/events" class="nav-link {% if request.endpoint == 'events_page' %}active{% endif %}">
+                        ⚠️ Events
+                    </a>
+                    <a href="/threat-intel" class="nav-link {% if request.endpoint == 'threat_intel_page' %}active{% endif %}">
+                        🔍 Threat Intel
+                    </a>
+                    <hr style="margin: 15px 0; opacity: 0.3;">
+                    <a href="/api/health" class="nav-link" target="_blank">
+                        🔗 API
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4 main-content">
+                {% block content %}{% endblock %}
+
+                <!-- Footer -->
+                <div class="footer">
+                    <p>IoT Network Security Monitor • Raspberry Pi Zero 2 W • UPIICSA</p>
+                    <p style="font-size: 0.75rem; margin: 5px 0;">
+                        Last updated: <span id="last-update">--:--:--</span>
+                    </p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            document.getElementById('last-update').textContent = now.toLocaleTimeString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

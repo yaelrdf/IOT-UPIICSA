@@ -1,0 +1,172 @@
+{% extends "base_es.html" %}
+
+{% block title %}Eventos - Monitor IoT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>📋 Registro de Eventos de Seguridad</h2>
+        <p class="text-muted">Todos los eventos detectados en tu red de IoT</p>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header">
+        <strong>🔍 Filtros</strong>
+    </div>
+    <div class="card-body">
+        <form id="filterForm" class="row g-3">
+            <div class="col-md-3">
+                <label for="severityFilter" class="form-label">Severidad</label>
+                <select class="form-select" id="severityFilter" name="severity">
+                    <option value="">Todos</option>
+                    <option value="critical" {% if request.args.get('severity') == 'critical' %}selected{% endif %}>🔴 Crítica</option>
+                    <option value="high" {% if request.args.get('severity') == 'high' %}selected{% endif %}>🟠 Alta</option>
+                    <option value="medium" {% if request.args.get('severity') == 'medium' %}selected{% endif %}>🟡 Media</option>
+                    <option value="low" {% if request.args.get('severity') == 'low' %}selected{% endif %}>🟢 Baja</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="deviceFilter" class="form-label">Dispositivo</label>
+                <input type="text" class="form-control" id="deviceFilter" name="device" 
+                       placeholder="Dirección IP" value="{{ request.args.get('device', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label for="typeFilter" class="form-label">Tipo de Evento</label>
+                <select class="form-select" id="typeFilter" name="type">
+                    <option value="">Todos los tipos</option>
+                    <option value="NEW_DEVICE">Dispositivo Nuevo</option>
+                    <option value="BLACKLIST_IP">IP en Lista Negra</option>
+                    <option value="BLACKLIST_DOMAIN">Dominio en Lista Negra</option>
+                    <option value="BEACONING">Actividad de Beacon</option>
+                    <option value="GEO_ANOMALY">Anomalía Geográfica</option>
+                    <option value="HIGH_VOLUME">Alto Volumen</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="acknowledgedFilter" class="form-label">Estado</label>
+                <select class="form-select" id="acknowledgedFilter" name="acknowledged">
+                    <option value="">Todos</option>
+                    <option value="false">No Reconocidos</option>
+                    <option value="true">Reconocidos</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Eventos -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>{{ events | length }} Evento(s)</span>
+        <button class="btn btn-sm btn-outline-light" onclick="document.getElementById('filterForm').reset(); location.reload()">
+            🔄 Limpiar Filtros
+        </button>
+    </div>
+    <div class="card-body p-0">
+        {% if events %}
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Hora</th>
+                        <th>Tipo</th>
+                        <th>Dispositivo</th>
+                        <th>Descripción</th>
+                        <th>Severidad</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td>
+                            <span class="time-badge" title="{{ event.timestamp }}">
+                                {{ event.timestamp | timeago }}
+                            </span>
+                        </td>
+                        <td>
+                            <code>{{ event.type }}</code>
+                        </td>
+                        <td>
+                            <strong>{{ event.device_ip }}</strong>
+                        </td>
+                        <td>
+                            {{ event.description or '-' }}
+                        </td>
+                        <td>
+                            <span class="badge" style="background-color: {{ event.severity_color }};">
+                                {{ event.severity }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if event.acknowledged %}
+                            <span class="badge bg-success">✓ Reconocido</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">⚠️ Nuevo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not event.acknowledged %}
+                            <button class="btn btn-sm btn-outline-primary" onclick="acknowledgeEvent({{ event.id }})">
+                                ✓ Reconocer
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary" disabled>
+                                Reconocido
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info m-3">
+            No hay eventos que coincidan con los filtros seleccionados. ✅
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('filterForm').addEventListener('change', function() {
+    const params = new URLSearchParams();
+    
+    const severity = document.getElementById('severityFilter').value;
+    const device = document.getElementById('deviceFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const acknowledged = document.getElementById('acknowledgedFilter').value;
+    
+    if (severity) params.append('severity', severity);
+    if (device) params.append('device', device);
+    if (type) params.append('type', type);
+    if (acknowledged !== '') params.append('acknowledged', acknowledged);
+    
+    const queryString = params.toString();
+    window.location.href = '/events' + (queryString ? '?' + queryString : '');
+});
+
+function acknowledgeEvent(eventId) {
+    fetch(`/api/events/${eventId}/acknowledge`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error al reconocer el evento: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al reconocer el evento');
+    });
+}
+</script>
+{% endblock %}

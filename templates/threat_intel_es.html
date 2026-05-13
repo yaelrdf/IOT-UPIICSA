@@ -1,0 +1,177 @@
+{% extends "base_es.html" %}
+
+{% block title %}Inteligencia de Amenazas - Monitor IoT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>🎯 Inteligencia de Amenazas</h2>
+        <p class="text-muted">Estado de las fuentes de inteligencia y listas de bloqueo</p>
+    </div>
+</div>
+
+<!-- Resumen de Fuentes -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #e74c3c;">{{ intel_stats.total_ips }}</div>
+            <div class="stat-label">IPs en Lista Negra</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #e67e22;">{{ intel_stats.total_domains }}</div>
+            <div class="stat-label">Dominios en Lista Negra</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #27ae60;">{{ intel_stats.active_sources }}</div>
+            <div class="stat-label">Fuentes Activas</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" style="color: #2980b9;">{{ intel_stats.last_update }}</div>
+            <div class="stat-label">Última Actualización</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Fuentes de Inteligencia -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📊 Fuentes de Inteligencia de Amenazas</span>
+        <button class="btn btn-sm btn-outline-light" onclick="refreshIntel()">
+            🔄 Actualizar Ahora
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre de Fuente</th>
+                        <th>Tipo</th>
+                        <th>URL</th>
+                        <th>IPs Cargadas</th>
+                        <th>Dominios Cargados</th>
+                        <th>Última Actualización</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for source in sources %}
+                    <tr>
+                        <td>
+                            <strong>{{ source.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ source.type }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ source.url }}" target="_blank" rel="noopener" class="text-decoration-none">
+                                🔗 Ver
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning text-dark">{{ source.ips_count }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning text-dark">{{ source.domains_count }}</span>
+                        </td>
+                        <td>
+                            <span class="time-badge" title="{{ source.last_update }}">
+                                {{ source.last_update | timeago }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if source.enabled %}
+                            <span class="status-badge status-active">✓ Activo</span>
+                            {% else %}
+                            <span class="status-badge status-blocked">🚫 Deshabilitado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Información sobre Inteligencia de Amenazas -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <strong>ℹ️ Sobre la Inteligencia de Amenazas</strong>
+            </div>
+            <div class="card-body">
+                <p>El Monitor IoT utiliza múltiples fuentes de inteligencia de amenazas para detectar y bloquear:</p>
+                <ul>
+                    <li><strong>Direcciones IP maliciosas:</strong> IPs conocidas de botnets, C&C, y otros malware</li>
+                    <li><strong>Dominios maliciosos:</strong> Dominios de phishing, malware, y comando y control</li>
+                    <li><strong>Patrones de comportamiento:</strong> Actividad de beacon, anomalías geográficas, alto volumen</li>
+                </ul>
+                <p class="mt-3 mb-0">Las listas se actualizan automáticamente cada 24 horas.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <strong>⚙️ Configuración de Inteligencia</strong>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Modo de Operación:</dt>
+                    <dd class="col-sm-7">{{ intel_config.mode or 'Pasivo' }}</dd>
+                    
+                    <dt class="col-sm-5">Actualización Automática:</dt>
+                    <dd class="col-sm-7">
+                        {% if intel_config.auto_update %}
+                        <span class="badge bg-success">Habilitada</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Deshabilitada</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-5">Intervalo de Actualización:</dt>
+                    <dd class="col-sm-7">Cada 24 horas</dd>
+                    
+                    <dt class="col-sm-5">Fuentes Activas:</dt>
+                    <dd class="col-sm-7">{{ intel_config.active_sources or '5' }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshIntel() {
+    if (confirm('¿Deseas actualizar todas las fuentes de inteligencia ahora? Esto puede tomar unos minutos.')) {
+        fetch('/api/intel/refresh', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Actualización iniciada. La página se recargará cuando esté lista.');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                alert('Error al actualizar: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al actualizar inteligencia de amenazas');
+        });
+    }
+}
+
+// Auto-refresh every 60 seconds (deshabilitado - puede causar errores de conexión)
+// setTimeout(() => location.reload(), 60000);
+</script>
+{% endblock %}
