@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import List, Dict, Any
 
-from constants import EventType, Severity, PRIVATE_RANGES
+from src.constants import EventType, Severity, PRIVATE_RANGES
 
 log = logging.getLogger(__name__)
 

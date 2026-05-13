@@ -9,10 +9,10 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from config import load_config
-from database import Database
-from constants import EventType, Severity
-from threat_intel import ThreatIntel
+from src.config import load_config
+from src.database import Database
+from src.constants import EventType, Severity
+from src.core import ThreatIntel
 
 log = logging.getLogger(__name__)
 

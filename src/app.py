@@ -13,15 +13,10 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Local imports
-from config import load_config
-from database import Database
-from scanner import Scanner
-from capture import PacketCapture, save_packets_to_db
-from analyzer import Analyzer
-from threat_intel import ThreatIntel
-from alerter import Alerter
-from spoofer import ARPSpoofer
-from constants import EventType
+from src.config import load_config
+from src.database import Database
+from src.core import Scanner, PacketCapture, save_packets_to_db, Analyzer, ThreatIntel, Alerter, ARPSpoofer
+from src.constants import EventType
 
 
 # ── global state ───────────────────────────────────────────────────────────

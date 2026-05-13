@@ -3,9 +3,12 @@
 IoT Network Security Monitor — Main Entry Point
 
 Usage:
-    sudo python3 monitor.py       # Run with default config
-    sudo python3 monitor.py -d    # Run with demo data
-    sudo python3 monitor.py -c custom.yaml  # Run with custom config
+    sudo python3 -m src.monitor       # Run with default config
+    sudo python3 -m src.monitor -d    # Run with demo data
+    sudo python3 -m src.monitor -c config/config.yaml  # Run with custom config
+
+Or from src/ directory:
+    sudo python3 monitor.py
 
 Requires root/sudo for:
     - Packet capture (raw sockets)
@@ -26,15 +29,19 @@ if sys.version_info < (3, 7):
     print("Error: Python 3.7+ is required", file=sys.stderr)
     sys.exit(1)
 
-# Ensure we're in the right directory
-SCRIPT_DIR = Path(__file__).parent
-os.chdir(SCRIPT_DIR)
+# Add parent directory to path for imports to work when run as script
+if __name__ == '__main__':
+    # Get the directory containing this script
+    SCRIPT_DIR = Path(__file__).parent
+    # Add the parent of src to path
+    sys.path.insert(0, str(SCRIPT_DIR.parent))
+    os.chdir(SCRIPT_DIR.parent)
 
 # Now import our modules
-from config import load_config
-from database import Database
-import app as app_module
-from web import init_web_app, app as flask_app
+from src.config import load_config
+from src.database import Database
+from src import app as app_module
+from src.web import init_web_app, app as flask_app
 
 log = logging.getLogger(__name__)
 
@@ -176,8 +183,8 @@ def main():
     )
     parser.add_argument(
         "-c", "--config",
-        default="config.yaml",
-        help="Path to config file (default: config.yaml)"
+        default="config/config.yaml",
+        help="Path to config file (default: config/config.yaml)"
     )
     parser.add_argument(
         "-d", "--demo",

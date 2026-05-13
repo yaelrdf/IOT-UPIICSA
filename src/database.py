@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 
-from constants import EventType, Severity, EVENT_SEVERITY
+from src.constants import EventType, Severity, EVENT_SEVERITY
 
 log = logging.getLogger(__name__)
 
